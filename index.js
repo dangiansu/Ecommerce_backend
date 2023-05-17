@@ -1,5 +1,6 @@
 const express = require("express");
-
+const path = require('path')
+const multer=require('multer')
 const app = express();
 const bodyParser = require("body-parser");
 const Sequelize = require("sequelize");
@@ -10,14 +11,27 @@ const {createTokens,validateToken} = require('./jwt')
 const port = 2000;
 const bcrypt = require("bcrypt");
 
-
-app.use(bodyParser.json());
 var corsOptions = {
   origin: "*"
 };
 app.use(cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: false }));
+//app.use(bodyParser.json());
 
+// multer image 
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./public/uploads");
+  },
+  filename: function (req, file, cb){
+    cb(null, Date.now() + file.originalname);
+  },
+});
+
+const upload = multer({ storage }) 
+
+    //  user api end point is here
 app.post("/register", (req, res) => {
   const { password } = req.body;
   bcrypt.hash(password, 10).then((hash) => {
@@ -118,9 +132,11 @@ app.get('/get/:id',async(req,res)=>{
 
         // product end point is here
 
-        app.post('/add',async(req ,res)=>{
+        app.post('/add',upload.single('image'),async(req ,res)=>{
+          // console.log("--body--"+req.body.Name);
+          // console.log("--File--"+req.file);
              const Name = req.body.Name;
-             const image = req.body.image;
+             const image = req.file.filename;
              const prices = req.body.prices;
              const des = req.body.des;
              const savedetail = Product.build({
@@ -130,7 +146,8 @@ app.get('/get/:id',async(req,res)=>{
               des
              })
              await savedetail.save();
-             res.json("tera data save bhai")
+             res.send("Product is add successful")
+            
         })
         app.get('/view',async(req,res)=>{
           const allproduct = await Product.findAll();
@@ -150,17 +167,53 @@ app.get('/get/:id',async(req,res)=>{
           
           res.json(`Product with id ${productid} deleted`);
         })
-        app.put('/updatepr/:id',async(req,res)=>{
-          const id = req.params.id;
-          const {Name,image,prices,des} =req.body;
-          await edit.update({Name,image,prices,des })
-          res.send(edit)
-          const edit = await Product.findByPk(id)
-          if(!edit){
-            return res.status(200).send('Product not found')
-          }
+        // app.put('/updatepr/:id',async(req,res)=>{
+        //    const id = req.params.id;
+        //   const {Name,image,prices,des} =req.body;
+        //   try{
+        //     const edit = await Product.findByPk(id)
+        //     if(!edit){
+        //       return res.status(404).send("product not found")
+        //     }
+        //   }
+        
+        //  await edit.update({Name,image,prices,des })
+        //   res.send(edit)
+     
+        //   if(!edit){
+        //     return res.status(200).send('Product not found')
+        //   }
 
-        })
+        //  })
+        app.put('/updatepr/:id', async (req, res) => {
+          const id = req.params.id;
+          const { Name, image, prices, des } = req.body;
+          
+          try {
+            const product = await Product.findByPk(id);
+            if (!product) {
+              return res.status(404).send('Product not found');
+            }
+            
+            product.Name = Name;
+            product.image = image;
+            product.prices = prices;
+            product.des= des;
+            
+            await product.save();
+            
+            res.send(product);
+          } catch (error) {
+            console.error('Error updating product', error);
+            res.status(500).send('Internal server error');
+          }
+        });
+        // cart api end point is here
+   
+
+    
+
+
         
 
     const {sequelize} = require('./models')
