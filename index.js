@@ -16,7 +16,7 @@ var corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(bodyParser.urlencoded({ extended: false }));
-//app.use(bodyParser.json());
+app.use(bodyParser.json());
 
 // multer image 
 
@@ -71,14 +71,14 @@ const validateToken = (req,res,next)=>{
     const bearer = bearerHeader.split(" ");
     const token = bearer[1];
     try{
-    const decode = verify(token, 'hcgygegdygyudfusdghfyy')
+    const decode =verify(token, 'hcgygegdygyudfusdghfyy')
     }
     catch{
         return res.send({
             result: "token is not valide",
           });
     }
-    next()
+    next();
     
   } 
   else {
@@ -139,6 +139,24 @@ app.get('/get/:id',async(req,res)=>{
              const image = req.file.filename;
              const prices = req.body.prices;
              const des = req.body.des;
+             const message=[]
+             
+
+             if(!Name){
+              message.push('Product Name is required')
+             }
+             if(!prices){
+              message.push('Product Price is required')
+             }
+             if(!des){
+              message.push('Product Des is required')
+             }
+             if(message.length>0){
+              return res.status(400).json({
+                meg:message
+              })
+             }
+            
              const savedetail = Product.build({
               Name,
               image,
@@ -210,11 +228,6 @@ app.get('/get/:id',async(req,res)=>{
         });
         // cart api end point is here
    
-
-    
-
-
-        
 
     const {sequelize} = require('./models')
     sequelize.sync({ alter:true }).then(()=>{console.log("database re-synced")})
